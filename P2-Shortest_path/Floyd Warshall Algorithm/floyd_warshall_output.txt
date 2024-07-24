@@ -1,0 +1,86 @@
+All Pairs Shortest Paths:
+From: 1 To: 1
+Path: 1 1
+Distance: 0.000000
+
+From: 1 To: 2
+Path: 1  S7  2
+Distance: 0.000000
+
+From: 1 To: 3
+Path: 1  S7   N6   S5  3
+Distance: 300.000000
+
+From: 1 To: 4
+Path: 1  S7   N6   S5  4
+Distance: 300.000000
+
+From: 1 To: 5
+Path: 1  S16  5
+Distance: 240.000000
+
+From: 1 To: 6
+Path: 1  S7  6
+Distance: 180.000000
+
+From: 1 To: 7
+Path: 1  S7  7
+Distance: 180.000000
+
+From: 1 To: 8
+Path: 1  S7   N6   S5  8
+Distance: 300.000000
+
+From: 1 To: 9
+Path: 1  S7   N6   S5   N4   S14  9
+Distance: 300.000000
+
+From: 1 To: 10
+Path: 1  S7  10
+Distance: 0.000000
+
+From: 1 To: 11
+Path: 1  S7  11
+Distance: 600.000000
+
+From: 1 To: 12
+Path: 1  S7  12
+Distance: 540.000000
+
+From: 1 To: 13
+Path: 1  S7   N6   S5  13
+Distance: 480.000000
+
+From: 1 To: 14
+Path: 1  S7  14
+Distance: 540.000000
+
+From: 1 To: 15
+Path: 1  S7   N6   S5  15
+Distance: 660.000000
+
+From: 1 To: 16
+Path: 1  S7  16
+Distance: 540.000000
+
+From: 1 To: 17
+Path: 1  S7   N6   S5  17
+Distance: 600.000000
+
+From: 1 To: 18
+Path: 1  S7   N6   S5  18
+Distance: 600.000000
+
+From: 1 To: 19
+Path: 1  S7   N6   S5  19
+Distance: 540.000000
+
+From: 1 To: 20
+Path: 1  S7   N6   S5  20
+Distance: 300.000000
+
+From: 1 To: 21
+Path: 1  S7   N6   S5   N15  21
+Distance: 1260.000000
+
+From: 1 To: 22
