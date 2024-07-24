@@ -1,0 +1,10 @@
+Source,Target,StartTime,EndTime,Duration
+Satellite 2,MainIoT,01-Jan-2024 00:00:00,01-Jan-2024 00:10:00,600
+Satellite 2,Node 1,01-Jan-2024 00:00:00,01-Jan-2024 00:09:50,590
+Satellite 1,Node 1,01-Jan-2024 00:26:45,01-Jan-2024 00:33:00,375
+Satellite 1,Node 2,01-Jan-2024 00:29:50,01-Jan-2024 00:40:20,630
+Satellite 1,GS,01-Jan-2024 00:34:10,01-Jan-2024 00:44:30,620
+Satellite 3,Node 1,01-Jan-2024 01:20:10,01-Jan-2024 01:29:05,535
+Satellite 3,MainIoT,01-Jan-2024 01:22:05,01-Jan-2024 01:32:15,610
+Satellite 2,MainIoT,01-Jan-2024 01:36:30,01-Jan-2024 01:48:35,725
+Satellite 2,Node 1,01-Jan-2024 01:38:45,01-Jan-2024 01:48:00,555
