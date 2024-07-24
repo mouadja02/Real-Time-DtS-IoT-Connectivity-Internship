@@ -1,0 +1,65 @@
+close all; clc;
+
+% Starlink-like configuration parameters
+altitude = 550e3; % Altitude in meters
+numberOfPlanes = 15; % Adjusted number of orbital planes for 20 satellites
+satellitesPerPlane = 1; % Satellites per plane for 20 satellites
+orbitalPeriod = 1.59 * 3600; % Orbital period in seconds
+numberOfSatellites = 15;
+% Create satellite scenario
+startTime = datetime(2024, 1, 1, 0, 0, 0);
+stopTime = startTime + hours(1); % Duration of simulation
+sampleTime = 60; % Sampling time in seconds
+sc = satelliteScenario(startTime, stopTime, sampleTime);
+
+% Earth radius
+Re = earthRadius('m');
+
+% Calculate RAAN and true anomaly for each satellite
+raanArray = repmat((0:numberOfPlanes-1) * (360 / numberOfPlanes), satellitesPerPlane, 1);
+raanArray = raanArray(:);
+trueAnomalyArray = repmat((0:satellitesPerPlane-1)' * (360 / satellitesPerPlane), 1, numberOfPlanes);
+trueAnomalyArray = trueAnomalyArray(:);
+inclination = linspace(20, 90, numberOfPlanes);
+
+% Calculate the semi-major axis for each satellite
+semiMajorAxis = altitude + Re;
+
+% Deploy satellites
+sat_array = [];
+for i = 1:numberOfPlanes * satellitesPerPlane
+    sat_array = [sat_array; satellite(sc, semiMajorAxis, 0, inclination(ceil(i / satellitesPerPlane)), ...
+        raanArray(i), 0, trueAnomalyArray(i), "Name", "Satellite " + i, 'OrbitPropagator', 'sgp4')];
+end
+
+% Number of IoT devices
+num_devices = 20;
+
+% Generate random latitude and longitude for Europe
+lat_Europe = 35 + (70 - 35) * rand(1, num_devices); % Latitude range for Europe
+lon_Europe = -10 + (40 - (-10)) * rand(1, num_devices); % Longitude range for Europe
+
+% Generate random latitude and longitude for Africa
+lat_Africa = -35 + (35 - (-35)) * rand(1, num_devices); % Latitude range for Africa
+lon_Africa = -20 + (55 - (-20)) * rand(1, num_devices); % Longitude range for Africa
+
+% Generate random latitude and longitude for Asia
+lat_Asia = -10 + (80 - (-10)) * rand(1, num_devices); % Latitude range for Asia
+lon_Asia = 60 + (150 - 60) * rand(1, num_devices); % Longitude range for Asia
+
+lat = [lat_Asia,lat_Africa,lat_Europe];
+lon = [lon_Asia,lon_Africa,lon_Europe];
+
+iot_array = [];
+for i = 1:length(lat)
+    iot_array = [iot_array, groundStation(sc, 'Latitude', lat(i), 'Longitude', lon(i), 'Name', "IoT Device " + i)];
+end
+
+% Visualization
+satelliteScenarioViewer(sc);
+
+% Play the simulation
+play(sc);
+
+
+
