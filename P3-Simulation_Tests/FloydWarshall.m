@@ -1,4 +1,4 @@
-function FloydWarshall(fileName,start_,end_, numNodes)
+function delay = FloydWarshall(fileName,start_,end_, numNodes)
     % Read input file
     fileID = fopen(fileName, 'r');
     
@@ -68,12 +68,12 @@ function FloydWarshall(fileName,start_,end_, numNodes)
         end
     end
     
-
+    delay = dist(start_, end_);
     % Display final paths
     disp('Floyd-Warshall Results');
     disp(['From: ', num2str(start_), ' To: ', num2str(end_)]);
     disp(['Path: N', num2str(start_), obtainPath(start_, end_, parent, dist, numNodes), ' N',num2str(end_)]);
-    disp(['Delay: ', num2str(dist(start_, end_))]);
+    disp(['Delay: ', num2str(delay)]);
     disp(' ');
        
     
