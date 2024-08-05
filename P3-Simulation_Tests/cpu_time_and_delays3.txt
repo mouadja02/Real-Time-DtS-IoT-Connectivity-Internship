@@ -1,1 +1,2 @@
 Number of Satellites, Number of Nodes, Brute-force Min Delay, Floyd-Warshall Delay, Brute-force CPU Time, Floyd-Warshall CPU Time
+6, 24, Inf, 5724.000000, 0.083371, 0.052195

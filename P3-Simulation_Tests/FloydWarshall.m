@@ -48,8 +48,8 @@ function delay = FloydWarshall(fileName,start_,end_, numNodes)
     for k = 1:V
         for i = 1:V
             for j = 1:V
-                if dist(i, j) > calculate_delay(dist(i, k),dist(k, j),420,1.59*3600)
-                    dist(i, j) = calculate_delay(dist(i, k),dist(k, j),420,1.59*3600);
+                if dist(i, j) > calculate_delay(dist(i, k),dist(k, j),420,5724)
+                    dist(i, j) = calculate_delay(dist(i, k),dist(k, j),420,5724);
                     dist(j,i) = dist(i, j);
                     parent(i, j) = parent(k, j);
                     parent(j,i) = parent(i, j);

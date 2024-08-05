@@ -63,3 +63,67 @@ function id = convert_to_int(identifier)
         error('Invalid identifier format');
     end
 end
+
+%%
+function delay = FloydWarshall(matrix, start_, end_, Tcon, Torb, numIoTs, numSats)
+    % Assume matrix is provided as input where rows are IoTs and columns are satellites
+    
+    
+    % Initialize distance and parent matrices
+    dist = inf(numIoTs, numSats);
+    parent = zeros(numIoTs, numSats);
+    
+    % Read the matrix and initialize dist and parent matrices
+    for i = 1:numIoTs
+        for j = 1:numSats
+            if matrix(i, j) < inf
+                dist(i, j) = matrix(i, j);
+                parent(i, j) = i;
+            end
+        end
+    end
+    
+    % Path from vertex to itself is set to 0
+    for i = 1:numIoTs
+        dist(i, i) = 0;
+    end
+    
+    % Initialize the path matrix
+    for i = 1:numIoTs
+        for j = 1:numSats
+            if dist(i, j) == inf
+                parent(i, j) = 0;
+            else
+                parent(i, j) = i;
+            end
+        end
+    end
+    
+    % Actual Floyd-Warshall algorithm
+    for k = 1:numSats
+        for i = 1:numIoTs
+            for j = 1:numSats
+                if dist(i, j) > calculate_delay(dist(i, k), dist(k, j), Tcon, Torb);
+                    dist(i, j) = calculate_delay(dist(i, k), dist(k, j), Tcon, Torb);
+                    parent(i, j) = parent(k, j);
+                end
+            end
+        end
+    end
+
+    % Check for negative cycles (if applicable)
+    for i = 1:numIoTs
+        if dist(i, i) ~= 0
+            disp(['Negative cycle at: ', num2str(i)]);
+            return;
+        end
+    end
+    
+    delay = dist(start_, end_);
+    % Display final paths
+    disp('Floyd-Warshall Results');
+    disp(['From: ', num2str(start_), ' To: ', num2str(end_)]);
+    disp(['Path: N', num2str(start_), obtainPath(start_, end_, parent, dist), ' N', num2str(end_)]);
+    disp(['Delay: ', num2str(delay)]);
+    disp(' ');
+end

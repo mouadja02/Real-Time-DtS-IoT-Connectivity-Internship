@@ -106,14 +106,134 @@ plot(f3, g3, 'Color', 'b');
 text(3300, a3 * sqrt(b3^2 - 3300^2)+150, 'Altitude 1800km', 'Color', 'b');
 
 % Ajout de légendes et d'axes
-legend('Simulation results', 'Fitting curve','Theoretical curve','FontSize',10,'TextColor','black');
-xlabel('Minimum Distance (km)');
-ylabel('Duration (s)');
+legend('Simulation results', 'Curve fitting of simulation results','Theoretical curve','FontSize',10,'TextColor','black');
+xlabel('Minimum Distance d_{min} (km)');
+ylabel('Visibility Duration T_{con} (s)');
 title('Correlation between minimum distance to orbit projection and connectivity duration');
 grid on;
 
 hold off;
+%%
+% Data
+x = [6,8,10,12,14,16,18,20,22,24];
 
+% Case 1 : 12 Nodes
+CPU_12_BF = [0.358,0.329,1.475,3.137,9.624,25.52,27.01,36.75,51.37,140.72];
+CPU_12_FW = [0.029,0.03,0.032,0.05,0.058,0.059,0.068,0.066,0.069,0.071];
+delay_12_BF = [4235,4235,4145,3780,3235,3135,3135,2025,985,985];
+delay_12_FW = [4235,4235,4145,3780,3235,3135,3135,2025,985,985];
+
+% Case 2 : 18 Nodes
+CPU_18_BF = [0.232,0.321,3.027,15.336,114.29,549.49,581.64,797.99,2497.56,4133.4];
+CPU_18_FW = [0.042,0.051,0.054,0.053,0.064,0.062,0.071,0.076,0.084,0.09];
+delay_18_BF = [4235,4235,4145,3755,3235,2045,1970,1805,590,460];
+delay_18_FW = [4235,4235,4145,3755,3235,2045,1970,1805,590,460];
+
+% Case 3 : 24 Nodes
+CPU_24_BF = [23.93,36.48,237.22,308.02,379.66,1392.34,1850.32,2431.02,3862.29,5590.05];
+CPU_24_FW = [0.044,0.058,0.064,0.071,0.080,0.095,0.103,0.105,0.119,0.122];
+delay_24_BF = [3440,3440,3105,2245,2140,1555,1045,435,405,405];
+delay_24_FW = [3440,3440,3105,2245,2140,1555,1045,435,405,405];
+
+% Plotting CPU times
+figure;
+semilogy(x, CPU_24_BF, '-p', 'DisplayName', '22 relay nodes BF');
+hold on;
+semilogy(x, CPU_18_BF, '-^', 'DisplayName', '16 relay nodes BF');
+semilogy(x, CPU_12_BF, '-o', 'DisplayName', '10 relay nodes BF');
+semilogy(x, CPU_24_FW, '--p', 'DisplayName', '22 relay nodes FW');
+semilogy(x, CPU_18_FW, '--^', 'DisplayName', '16 relay nodes FW');
+semilogy(x, CPU_12_FW, '--o', 'DisplayName', '10 relay nodes FW');
+xlabel('Number of Satellites');
+ylabel('CPU Time (seconds)');
+legend('show');
+title('CPU Time vs. Number of Satellites');
+grid on;
+%%
+% Plotting Routing Delays
+figure;
+plot(x, delay_12_BF, '-o', 'DisplayName', 'Brute force');
+hold on;
+% plot(x, delay_18_BF, '-^', 'DisplayName', '18 Nodes');
+% plot(x, delay_24_BF, '-p', 'DisplayName', '24 Nodes');
+% xlabel('Number of Satellites');
+% ylabel('Routing Delay (seconds)');
+% legend('show');
+% title('Brute force Routing Delay vs. Number of Satellites');
+% grid on;
+% Plotting Routing Delays
+
+plot(x, delay_12_FW, '--o', 'DisplayName', 'Floyd-Warshall');
+% plot(x, delay_18_FW, '--^', 'DisplayName', '18 Nodes');
+% plot(x, delay_24_FW, '--p', 'DisplayName', '24 Nodes');
+xlabel('Number of Satellites');
+ylabel('Routing Delay (seconds)');
+legend('show');
+title('Calculated Routing Delay vs. Number of Satellites (11 IoT devices and 1 Ground Station)');
+grid on;
+
+
+
+%%
+
+% Data
+x = [6,8,10,12,14,16,18,20,22,24];
+
+% Case 1 : 12 Nodes
+CPU_12_BF = [0.358,0.329,1.475,3.137,9.624,25.52,27.01,36.75,51.37,140.72];
+CPU_12_FW = [0.029,0.03,0.032,0.05,0.058,0.059,0.068,0.066,0.069,0.071];
+delay_12_BF = [4235,4235,4145,3780,3235,3135,1990,1530,985,985];
+delay_12_FW = [4235,4235,4145,3780,3235,3135,1990,1530,985,985];
+
+% Case 2 : 18 Nodes
+CPU_18_BF = [0.232,0.321,3.027,15.336,114.29,549.49,581.64,797.99,2497.56,4133.4];
+CPU_18_FW = [0.042,0.051,0.054,0.053,0.064,0.062,0.071,0.076,0.084,0.09];
+delay_18_BF = [4235,4235,4145,3755,3235,2045,1970,800,590,460];
+delay_18_FW = [4235,4235,4145,3755,3235,2045,1970,800,590,460];
+
+% Case 3 : 24 Nodes
+CPU_24_BF = [23.93,36.48,237.22,308.02,379.66,1392.34,1850.32,2431.02,3862.29,5590.05];
+CPU_24_FW = [0.044,0.058,0.064,0.071,0.080,0.095,0.103,0.105,0.119,0.122];
+delay_24_BF = [3440,3440,3105,2245,2140,1555,1045,435,405,405];
+delay_24_FW = [3440,3440,3105,2245,2140,1555,1045,435,405,405];
+
+% Plotting CPU times
+figure;
+semilogy(x, CPU_12_BF, '-o', 'DisplayName', '12 Nodes BF');
+hold on;
+semilogy(x, CPU_12_FW, '--o', 'DisplayName', '12 Nodes FW');
+semilogy(x, CPU_18_BF, '-^', 'DisplayName', '18 Nodes BF');
+semilogy(x, CPU_18_FW, '--^', 'DisplayName', '18 Nodes FW');
+semilogy(x, CPU_24_BF, '-p', 'DisplayName', '24 Nodes BF');
+semilogy(x, CPU_24_FW, '--p', 'DisplayName', '24 Nodes FW');
+xlabel('Number of Satellites');
+ylabel('CPU Time (seconds)');
+legend('show');
+title('CPU Time vs. Number of Satellites');
+grid on;
+%%
+% Plotting Routing Delays
+figure;
+plot(x, delay_12_BF, '-o', 'DisplayName', '12 Nodes');
+hold on;
+plot(x, delay_18_BF, '-^', 'DisplayName', '18 Nodes');
+plot(x, delay_24_BF, '-p', 'DisplayName', '24 Nodes');
+xlabel('Number of Satellites');
+ylabel('Routing Delay (seconds)');
+legend('show');
+title('Brute force Routing Delay vs. Number of Satellites');
+grid on;
+% Plotting Routing Delays
+figure;
+hold on;
+plot(x, delay_12_FW, '--o', 'DisplayName', '12 Nodes');
+plot(x, delay_18_FW, '--^', 'DisplayName', '18 Nodes');
+plot(x, delay_24_FW, '--p', 'DisplayName', '24 Nodes');
+xlabel('Number of Satellites');
+ylabel('Routing Delay (seconds)');
+legend('show');
+title('Floyd-Warshall Routing Delay vs. Number of Satellites');
+grid on;
 
 %%
 function duree=f(d)
