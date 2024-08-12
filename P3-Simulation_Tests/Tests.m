@@ -35,9 +35,9 @@ for i = 1:numberOfSatellites
     end
 end
 % Define fixed coordinates for IoTs in Africa and Asia
-latitudes = [34.0208, 1.2921, -26.2041, 9.0765, -15.3875, -33.9249, 13.7563, 31.2304, 39.9042, 28.6139, 23.8103, 35.6895, ...
+latitudes = [35.6895, 1.2921, -26.2041, 9.0765, -15.3875, -33.9249, 13.7563, 31.2304, 39.9042, 28.6139, 23.8103, 34.0208, ...
     36.8219, 10.8231, -1.2864, -6.5244, 33.9391, 14.5995, 12.5657, 13.7563, 24.7136, 19.0760, 25.2760, 15.5007];
-longitudes = [6.8317, 36.8219, 28.0473, 7.3986, 35.3088, 18.4241, 100.5018, 121.4737, 116.4074, 77.2090, 90.4125, 139.6917, ...
+longitudes = [139.6917, 36.8219, 28.0473, 7.3986, 35.3088, 18.4241, 100.5018, 121.4737, 116.4074, 77.2090, 90.4125, 6.8317, ...
     38.0000, 106.6297, 36.8172, 39.2806, 67.7100, 120.9842, 104.9910, 100.5018, 46.6753, 72.8777, 55.2963, 32.5631];
 
 names = arrayfun(@(x) sprintf("N%d", x), 1:numberOfNodes, 'UniformOutput', false);
@@ -80,108 +80,90 @@ disp(['Access intervals written to ', filename]);
 %%
 clc; clear all;
 
+end_node = 12;
 
-end_node = 11;
 
-% Define the filenames
-filenames = {'access_intervals4.csv', 'access_intervals4.csv'};
+% Number of Monte Carlo simulations
+num_iterations = 100;
 
-% Loop through each filename
-for k = 1:length(filenames)
-    filename = filenames{k}; % Access the current filename
-    disp("-----------------------------");
-    disp(['Processing file: ', filename]);
-    disp("-----------------------------");
+filename = 'access_intervals5.csv'; % Access the current filename
+
+% Loop through the number of nodes and satellites
+for numNodes = 12:6:24
+    for numSats = 6:2:24
+        % Initialize accumulators for Monte Carlo
+        total_time_bruteforce = 0;
+        total_time_floydwarshall = 0;
+
+
+        % Load the CSV file
+        data = readtable(filename);
     
-    % Loop through the number of nodes and satellites
-    for numNodes = 24
-        for numSats = 6:2:24
-            % Load the CSV file
-            data = readtable(filename);
-        
-            done = false(numNodes, numSats);
-        
-            % Convertir les colonnes Source et Target en entiers si elles sont des tableaux de cellules
-            if iscell(data.Source)
-                data.Source = cellfun(@(x) convert_to_int(x, numNodes), data.Source);
-            else
-                data.Source = arrayfun(@(x) convert_to_int(num2str(x), numNodes), data.Source);
+        done = false(numNodes, numSats);
+    
+        % Convertir les colonnes Source et Target en entiers si elles sont des tableaux de cellules
+        if iscell(data.Source)
+            data.Source = cellfun(@(x) convert_to_int(x, numNodes), data.Source);
+        else
+            data.Source = arrayfun(@(x) convert_to_int(num2str(x), numNodes), data.Source);
+        end
+    
+        if iscell(data.Target)
+            data.Target = cellfun(@(x) convert_to_int(x, numNodes), data.Target);
+        else
+            data.Target = arrayfun(@(x) convert_to_int(num2str(x), numNodes), data.Target);
+        end
+    
+        count= 0;
+        % Créer le format de liste d'adjacence
+        adjacencyList = [];
+        for i = 1:height(data)
+            node = data.Target(i);
+            satellite = data.Source(i);
+    
+            if node > numNodes || satellite > numSats+numNodes
+                continue;
             end
-        
-            if iscell(data.Target)
-                data.Target = cellfun(@(x) convert_to_int(x, numNodes), data.Target);
-            else
-                data.Target = arrayfun(@(x) convert_to_int(num2str(x), numNodes), data.Target);
+    
+            startTime = data.StartTime(i);
+    
+            delay = sprintf('%s', datestr(startTime, 'HH:MM:SS'));
+    
+            % Mettre à jour la matrice avec le premier temps de début de connexion
+            if done(node, satellite - numNodes) == false
+                S = str2double(delay(1:2)) * 3600 + str2double(delay(4:5)) * 60 + str2double(delay(7:8));
+                done(node, satellite - numNodes) = true;
             end
+    
+            adjacencyList = [adjacencyList; node, satellite, S];
+            count = count+1;
+        end
+    
+        % Créer le fichier de sortie
+        outputFilename = 'input.txt';
+        fid_adjacency = fopen(outputFilename, 'w');
+    
+        % Écrire le nombre de sommets et d'arêtes
+        fprintf(fid_adjacency, '%d\n', numNodes + numSats);
+        fprintf(fid_adjacency, '%d\n', 2 * count);
+    
+        % Écrire la liste d'adjacence
+        for i = 1:size(adjacencyList, 1)
+            fprintf(fid_adjacency, '%d %d %d\n', adjacencyList(i, 1), adjacencyList(i, 2), adjacencyList(i, 3));
+        end
+    
+        for i = 1:size(adjacencyList, 1)
+            fprintf(fid_adjacency, '%d %d %d\n', adjacencyList(i, 2), adjacencyList(i, 1), adjacencyList(i, 3));
+        end
+    
+        % Fermer le fichier
+        fclose(fid_adjacency);
         
-            count= 0;
-            % Créer le format de liste d'adjacence
-            adjacencyList = [];
-            for i = 1:height(data)
-                node = data.Target(i);
-                satellite = data.Source(i);
-        
-                if node > numNodes || satellite > numSats+numNodes
-                    continue;
-                end
-        
-                startTime = data.StartTime(i);
-        
-                delay = sprintf('%s', datestr(startTime, 'HH:MM:SS'));
-        
-                % Mettre à jour la matrice avec le premier temps de début de connexion
-                if done(node, satellite - numNodes) == false
-                    S = str2double(delay(1:2)) * 3600 + str2double(delay(4:5)) * 60 + str2double(delay(7:8));
-                    done(node, satellite - numNodes) = true;
-                end
-        
-                adjacencyList = [adjacencyList; node, satellite, S];
-                count = count+1;
-            end
-        
-            % Créer le fichier de sortie
-            outputFilename = 'input.txt';
-            fid_adjacency = fopen(outputFilename, 'w');
-        
-            % Écrire le nombre de sommets et d'arêtes
-            fprintf(fid_adjacency, '%d\n', numNodes + numSats);
-            fprintf(fid_adjacency, '%d\n', 2 * count);
-        
-            % Écrire la liste d'adjacence
-            for i = 1:size(adjacencyList, 1)
-                fprintf(fid_adjacency, '%d %d %d\n', adjacencyList(i, 1), adjacencyList(i, 2), adjacencyList(i, 3));
-            end
-        
-            for i = 1:size(adjacencyList, 1)
-                fprintf(fid_adjacency, '%d %d %d\n', adjacencyList(i, 2), adjacencyList(i, 1), adjacencyList(i, 3));
-            end
-        
-            % Fermer le fichier
-            fclose(fid_adjacency);
-        
-            disp(['Output written to ', outputFilename]);
-        
-            % Ajouter les autres parties du code ici...
-            % Par exemple, exécuter les algorithmes Brute-force et Floyd-Warshall
-            % et calculer les délais et les chemins optimaux
-        
-            % Read the CSV data
-            data = readtable(filename);
-            
-            % Define the orbital period and connectivity duration
-            orbital_period = 5724; % =1.59h (StarLink satellites orbit period)
-            connectivity_duration = 420; % 7 min
-            
-            N_nodes = numNodes;
-            N_sats = numSats;
-            
-            
-            str_delays = zeros(1,2*N_sats);
-            min_delay = inf;
-            
-            tic
-            
-            for i = 1:N_sats
+        % Monte Carlo loop
+        for mc_iter = 1:num_iterations
+            % Bruteforce Timing
+            tic;
+            for i = 1:numSats
                 total_delay = 0;
                 relevant_data = data(strcmp(data.Source, "S" + num2str(i)) & strcmp(data.Target, "N1"), :);
                 if ~isempty(relevant_data)
@@ -208,7 +190,7 @@ for k = 1:length(filenames)
                         continue
                     end
             
-                    for k = 1:N_sats 
+                    for k = 1:numSats 
                         relevant_data = data(strcmp(data.Source, "S" + num2str(k)) & strcmp(data.Target, "N" + num2str(j)), :);
                         if ~isempty(relevant_data) && k~=i
                             str_delays(2) = calculate_delay(str_delays(1), seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
@@ -239,7 +221,7 @@ for k = 1:length(filenames)
                             end
             
             
-                            for m = 1:N_sats
+                            for m = 1:numSats
                                 relevant_data = data(strcmp(data.Source, "S" + num2str(m)) & strcmp(data.Target, "N" + num2str(l)), :);
                                 if ~isempty(relevant_data) && k~=i && m~=i && k~=m
                                     str_delays(4) = calculate_delay(str_delays(3), seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
@@ -268,7 +250,7 @@ for k = 1:length(filenames)
                                         continue
                                     end
             
-                                    for o = 1:N_sats
+                                    for o = 1:numSats
                                         relevant_data = data(strcmp(data.Source, "S" + num2str(o)) & strcmp(data.Target, "N" + num2str(n)), :);
                                         if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o
                                             str_delays(6) = calculate_delay(str_delays(5), seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
@@ -297,7 +279,7 @@ for k = 1:length(filenames)
                                                 continue
                                             end
             
-                                            for q = 1:N_sats
+                                            for q = 1:numSats
                                                 relevant_data = data(strcmp(data.Source, "S" + num2str(q)) & strcmp(data.Target, "N" + num2str(p)), :);
                                                 if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o
                                                     str_delays(8) = calculate_delay(str_delays(7), seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
@@ -326,7 +308,7 @@ for k = 1:length(filenames)
                                                         continue
                                                     end
             
-                                                    for s = 1:N_sats
+                                                    for s = 1:numSats
                                                         relevant_data = data(strcmp(data.Source, "S" + num2str(s)) & strcmp(data.Target, "N" + num2str(r)), :);
                                                         if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s
                                                             str_delays(10) = calculate_delay(str_delays(9), seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
@@ -356,7 +338,7 @@ for k = 1:length(filenames)
                                                             end
                                                         
             
-                                                            for u = 1:N_sats
+                                                            for u = 1:numSats
                                                                 relevant_data = data(strcmp(data.Source, "S" + num2str(u)) & strcmp(data.Target, "N" + num2str(t)), :);
                                                                 if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s && u~=i && u~=k && u~=m && u~=o && u~=q && u~=s
                                                                     str_delays(12) = calculate_delay(str_delays(11), seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
@@ -384,7 +366,7 @@ for k = 1:length(filenames)
                                                                         continue
                                                                     end
             
-                                                                    for w = 1:N_sats
+                                                                    for w = 1:numSats
                                                                         relevant_data = data(strcmp(data.Source, "S" + num2str(w)) & strcmp(data.Target, "N" + num2str(v)), :);
                                                                         if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s && u~=i && u~=k && u~=m && u~=o && u~=q && u~=s && w~=i && w~=k && w~=m && w~=o && w~=q && w~=s && w~=u
                                                                             str_delays(14) = calculate_delay(str_delays(13), seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
@@ -412,7 +394,7 @@ for k = 1:length(filenames)
                                                                                 continue
                                                                             end
             
-                                                                            for y = 1:N_sats
+                                                                            for y = 1:numSats
                                                                                 relevant_data = data(strcmp(data.Source, "S" + num2str(y)) & strcmp(data.Target, "N" + num2str(x)), :);
                                                                                 if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s && u~=i && u~=k && u~=m && u~=o && u~=q && u~=s && w~=i && w~=k && w~=m && w~=o && w~=q && w~=s && w~=u && y~=i && y~=k && y~=m && y~=o && y~=q && y~=s && y~=u && y~=w
                                                                                     str_delays(16) = calculate_delay(str_delays(15), seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
@@ -459,23 +441,29 @@ for k = 1:length(filenames)
                     end
                 end
             end
-               
-            toc
+            time_bruteforce = toc;
+            total_time_bruteforce = total_time_bruteforce + time_bruteforce;
             
-            disp(numSats);
-            disp(numNodes);
-            disp("Bruteforce Results");
-            disp("Shortest path :");
-            if min_delay ~= inf
-                display(opt_path);
-                hops = length(opt_path) - 1;
-                display(hops);
-                display(min_delay);
-            end
-            tic
+            % Floyd-Warshall Timing
+            tic;
             delay = FloydWarshall(outputFilename, 1, end_node, numNodes);
-            toc
-            disp("-------------------------------");
+            time_floydwarshall = toc;
+            total_time_floydwarshall = total_time_floydwarshall + time_floydwarshall;
         end
+        
+        % Calculate the average processing time over the Monte Carlo iterations
+        avg_time_bruteforce = total_time_bruteforce / num_iterations;
+        avg_time_floydwarshall = total_time_floydwarshall / num_iterations;
+        
+        % Display results
+        disp(numSats);
+        disp(numNodes);
+        disp("Monte Carlo Results");
+        disp("Average CPU time for Brute-force :");
+        disp(avg_time_bruteforce);
+        disp("Average CPU time for Floyd-Warshall :");
+        disp(avg_time_floydwarshall);
+        disp("-------------------------------");
     end
 end
+
