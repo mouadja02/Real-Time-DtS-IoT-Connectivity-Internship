@@ -1,18 +1,28 @@
 clc; close all; clear;
 
+num_iterations = 1;
 % Charger les données depuis le fichier CSV
 data = readtable('access_intervals.csv');
+numNodes = 22;
+numSats = 22;
+
+end_node = 12;
+
+start = [1,18];
+goal = [10,4];
+
+connectivity_duration = 420;
+orbital_period = 3600*1.59;
 
 % Définir l'ordre des satellites et des nœuds
-satellites = {'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16'};
-nodes = {'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10', 'N11', 'N12', 'N13', 'N14', 'N15', 'N16', 'N17', 'N18', 'N19', 'N20'};
+satellites = {'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18','S19','S20','S21','S22','S23','S24'};
+nodes = {'N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'N9', 'N10', 'N11', 'N12', 'N13', 'N14', 'N15', 'N16', 'N17', 'N18', 'N19', 'N20','N21','N22','N23','N24'};
 
 % Initialiser la matrice avec des valeurs 'inf' par défaut
-numNodes = length(nodes);
-numSatellites = length(satellites);
-matrix = inf(numNodes, numSatellites);
-tic
+matrix = inf(numNodes, numSats);
+
 % Remplir la matrice avec les temps de début de connexion
+ 
 for i = 1:height(data)
     node = data.Target{i};
     satellite = data.Source{i};
@@ -20,8 +30,17 @@ for i = 1:height(data)
     delay_str = sprintf('%s', datestr(startTime, 'HH:MM:SS'));
 
     % Trouver les indices correspondants
+
     nodeIdx = find(strcmp(nodes, node));
     satelliteIdx = find(strcmp(satellites, satellite));
+
+   if nodeIdx>numNodes
+       continue;
+   end
+
+   if satelliteIdx>numSats
+       continue;
+   end
 
     % Mettre à jour la matrice avec le premier temps de début de connexion
     if matrix(nodeIdx, satelliteIdx) == inf
@@ -30,116 +49,216 @@ for i = 1:height(data)
     end
 end
 
-% Afficher la matrice
-disp('Node-Satellite Start Time Matrix:');
-disp(array2table(matrix, 'VariableNames', satellites, 'RowNames', nodes));
 
-W = matrix;
-%%
-N_nodes = 19;
-N_sats = 16;
+% Initialize accumulators for Monte Carlo
+total_time_bruteforce = 0;
+total_time_dijkstra = 0;
 
-duration = 420;
-period = 1.59*3600;
-% W = [
-% 
-%     -2    45    63    87    63    47
-%     81    59    48    83    15    15
-%     47    42    79    29     8    -5
-%      3     4    55    -7    -5     9
-%     40    27    16    56    34    29
-%     39    10     1    70    13    83
-%     33    -7    83    86    34    10
-%     30    12    -7    46    65    -5
-%     35    14    25    56    11    27
-%     53    28    57     5    53    88
-%     18    39    90    -2    68    -2
-%     23    23    87    49    -9    -3
-%      1    54    36    26    15    37
-%     67    83    -3    11    88    57
-%     37    54    79    -3    57     1
-%     ];
-
-%%
-clear all;
-clc;
-% Number of nodes and satellites
-T_orbit=100;
-T_visibile=10;
-
-N_sats = 6;
-N_nodes = 15;
-
-W = randi([0, 100], N_nodes + 1, N_sats) - 10 % "+1" for the ground station
-
-
+% Monte Carlo loop
+for mc_iter = 1:num_iterations
+    % Bruteforce Timing
+    tic;
+    min_delay = inf;
     
-% Step 3: Find the best path from nodes to GS considering DNR
-for i = 1:1%N_nodes
-    tic
-    hops=inf;
-    bestPath = {};
-    bestDelay = inf;
-    for j = 1:N_sats
-        % check if one stage is the best
-        stage_delay = hop_delay(W(i,j),W(end,j));
-        if stage_delay < bestDelay
-            if ~(stage_delay  == bestDelay && hops > 2)
-                bestDelay = stage_delay;
-                bestPath = {['N' num2str(i)], ['S' num2str(j)],['GS (2 Hops)']};
-                hops=2;
-            end
+    % Loop through the first satellite
+    for i = 1:numSats
+        relevant_data = data(strcmp(data.Source, "S" + num2str(i)) & strcmp(data.Target, "N1"), :);
+        if matrix(1,i)~=inf
+            delay1 = matrix(1,i);
+        else
+            continue;
         end
-        for k = 1:N_nodes
-            if  k ~= i
-                hop2_delay = hop_delay(W(i,j),W(k,j));
-                for l_= 1:N_sats
-                    if  l_ ~= j
-                        hop3_delay = hop_delay(hop2_delay,W(k,l_));
-                        % check if two stages are the best
-                        stage_delay = hop_delay(hop3_delay,W(end,l_));
-                        if stage_delay < bestDelay
-                            if ~(stage_delay  == bestDelay && hops > 4)
-                                bestDelay = stage_delay;
-                                bestPath = {['N' num2str(i)], ['S' num2str(j)], ['N' num2str(k)], ['S' num2str(l_)],  ['GS (4 Hops)']};
-                                hops=4;
+        
+        for j = 2:numNodes
+            if matrix(j,i)~=inf 
+                delay2  = calculate_delay(delay1, matrix(j,i), connectivity_duration, orbital_period);
+                if delay2 > min_delay
+                    continue;
+                else 
+                    if j == end_node
+                        opt_path = ["N1", "S" + num2str(i), "N" + num2str(j)];
+                        min_delay  = delay2;
+                        continue;
+                    end
+                end
+                
+            else
+                continue;
+            end
+    
+            for k = 1:numSats 
+                if matrix(j,k)~=inf && k~=i
+                    delay3 = calculate_delay(delay2, matrix(j,k), connectivity_duration, orbital_period);
+                    if delay3 > min_delay
+                        continue;
+                    end
+                else
+                    continue;
+                end
+    
+                
+                for l = 2:numNodes
+                    if matrix(l,k)~=inf && l~=j
+                        delay4 = calculate_delay(delay3, matrix(l,k), connectivity_duration, orbital_period);
+                        if delay4 > min_delay
+                            continue;
+                        else
+                            if l == end_node
+                                opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l)];
+                                min_delay  = delay4;
+                                continue;
                             end
                         end
-                        for m = 1:N_nodes+1
-                            if  k ~= m
-                                hop4_delay = hop_delay(hop3_delay,W(m,l_));
-                                for n= 1:N_sats
-                                    if  l_ ~= n
-                                        hop5_delay = hop_delay(hop4_delay,W(m,n));
-                                        % check if three stages are the best
-                                        stage_delay =   hop_delay(hop5_delay,W(end,n));
-                                        if stage_delay < bestDelay
-                                            if ~(stage_delay  == bestDelay && hops > 6)
-                                                bestDelay = stage_delay;
-                                                bestPath = {['N' num2str(i)], ['S' num2str(j)], ['N' num2str(k)], ['S' num2str(l_)], ['N' num2str(m)], ['S' num2str(n)],  ['GS (6 Hops)']};
-                                                hops=6;
-                                            end
-                                        end
-                                        for o = 1:N_nodes+1
-                                            if  k ~= m
-                                                hop6_delay = hop_delay(hop5_delay,W(m,l_));
-                                                for p= 1:N_sats
-                                                    if  l_ ~= n
-                                                        hop7_delay = hop_delay(hop6_delay,W(m,n));
-                                                        % check if four stages are the best
-                                                        stage_delay =   hop_delay(hop7_delay,W(end,n));
-                                                        if stage_delay < bestDelay
-                                                            if ~(stage_delay  == bestDelay && hops > 8)
-                                                                bestDelay = stage_delay;
-                                                                bestPath = {['N' num2str(i)], ['S' num2str(j)], ['N' num2str(k)], ['S' num2str(l_)], ['N' num2str(m)], ['S' num2str(n)],    ['N' num2str(o)], ['S' num2str(p)], ['GS (8 Hops)']};
-                                                                hops=8;
-                                                            end
-                                                        end
-                                                    end
-                                                end
-                                            end
-                                        end
+                        
+                    else
+                        continue;
+                    end
+    
+    
+                    for m = 1:numSats
+                        if matrix(l,m)~=inf && k~=i && m~=i && k~=m
+                            delay5 = calculate_delay(delay4, matrix(l,m), connectivity_duration, orbital_period);
+                            if delay5 > min_delay
+                                continue;
+                            end
+                        else
+                            continue;
+                        end
+                        
+                        for n = 2:numNodes
+                            if matrix(n,m)~=inf && l~=j && l~=n && j~=n
+                                delay6 = calculate_delay(delay5, matrix(n,m), connectivity_duration, orbital_period);
+                                if delay6 > min_delay
+                                    continue;
+                                else 
+                                    if n == end_node 
+                                        opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n)];
+                                        min_delay  = delay6;
+                                        continue;
                                     end
+                                end
+                                
+                            else
+                                continue;
+                            end
+    
+                            for o = 1:numSats
+                                if matrix(n,o)~=inf && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o
+                                    delay7 = calculate_delay(delay6, matrix(n,o), connectivity_duration, orbital_period);
+                                    if delay7 > min_delay
+                                        continue;
+                                    end
+                                else
+                                    continue;
+                                end
+    
+                                
+                                for p = 2:numNodes
+                                    if matrix(p,o)~=inf && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p
+                                        delay8 = calculate_delay(delay7, matrix(p,o), connectivity_duration, orbital_period);
+                                        if delay8 > min_delay
+                                            continue;
+                                        else
+                                            if p == end_node
+                                                opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p)];
+                                                min_delay  = delay8;
+                                                continue;
+                                            end
+                                        end
+
+                                    else
+                                        continue;
+                                    end
+
+                                    % for q = 1:numSats
+                                    %     relevant_data = data(strcmp(data.Source, "S" + num2str(q)) & strcmp(data.Target, "N" + num2str(p)), :);
+                                    %     if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o
+                                    %         delay9 = calculate_delay(delay8, seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
+                                    %         if delay9 > min_delay
+                                    %             continue;
+                                    %         end
+                                    %     else
+                                    %         continue;
+                                    %     end
+                                    % 
+                                    % 
+                                    % 
+                                    %     for r = 2:numNodes
+                                    %         relevant_data = data(strcmp(data.Source, "S" + num2str(q)) & strcmp(data.Target, "N" + num2str(r)), :);
+                                    %         if ~isempty(relevant_data) && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p
+                                    %             total_delay = calculate_delay(delay9, seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
+                                    %             delay10 = total_delay;
+                                    %             if delay10 > min_delay
+                                    %                 continue;
+                                    %             end
+                                    %             if r == end_node && total_delay < min_delay
+                                    %                 opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r)];
+                                    %                 min_delay  = total_delay;
+                                    %             end
+                                    %         else
+                                    %             continue;
+                                    %         end
+                                    % 
+                                    % 
+                                    %         for s = 1:numSats
+                                    %             relevant_data = data(strcmp(data.Source, "S" + num2str(s)) & strcmp(data.Target, "N" + num2str(r)), :);
+                                    %             if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s
+                                    %                 delay11 = calculate_delay(delay10, seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
+                                    %                 if delay11 > min_delay
+                                    %                     continue;
+                                    %                 end
+                                    %             else
+                                    %                 continue;
+                                    %             end
+                                    % 
+                                    %             for t = 2:numNodes
+                                    %                 relevant_data = data(strcmp(data.Source, "S" + num2str(s)) & strcmp(data.Target, "N" + num2str(t)), :);
+                                    %                 if ~isempty(relevant_data) && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p && t~=p && j~=t && l~=t && t~=n && r~=t
+                                    %                     total_delay = calculate_delay(delay11, seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
+                                    %                     delay12 = total_delay;
+                                    %                     if delay12 > min_delay
+                                    %                         continue;
+                                    %                     end
+                                    %                     if t == end_node && total_delay < min_delay
+                                    %                         opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r), "S" + num2str(s), "N" + num2str(t)];
+                                    %                         min_delay  = total_delay;
+                                    %                     end
+                                    %                 else
+                                    %                     continue;
+                                    %                 end
+                                    % 
+                                    %                 for u = 1:numSats
+                                    %                     relevant_data = data(strcmp(data.Source, "S" + num2str(u)) & strcmp(data.Target, "N" + num2str(t)), :);
+                                    %                     if ~isempty(relevant_data) && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s && u~=i && u~=k && u~=m && u~=o && u~=q && u~=s
+                                    %                         delay13 = calculate_delay(delay12, seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
+                                    %                         if delay13 > min_delay
+                                    %                             continue;
+                                    %                         end
+                                    %                     else
+                                    %                         continue;
+                                    %                     end
+                                    % 
+                                    %                     for v = 2:numNodes
+                                    %                         relevant_data = data(strcmp(data.Source, "S" + num2str(u)) & strcmp(data.Target, "N" + num2str(v)), :);
+                                    %                         if ~isempty(relevant_data) && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p && t~=p && j~=t && l~=t && t~=n && r~=t && v~=j && v~=l && v~=n && v~=p && v~=r && v~=t 
+                                    %                             total_delay = calculate_delay(delay13, seconds(min(relevant_data.StartTime)), connectivity_duration, orbital_period);
+                                    %                             delay14 = total_delay;
+                                    %                             if delay14 > min_delay
+                                    %                                 continue;
+                                    %                             end
+                                    %                             if v == end_node && total_delay < min_delay
+                                    %                                 opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r), "S" + num2str(s), "N" + num2str(t), "S" + num2str(u), "N" + num2str(v)];
+                                    %                                 min_delay  = total_delay;
+                                    %                             end
+                                    %                         else
+                                    %                             continue;
+                                    %                         end
+                                    %                     end
+                                    %                 end
+                                    %             end
+                                    %         end
+                                    %     end
+                                    % end
                                 end
                             end
                         end
@@ -148,138 +267,41 @@ for i = 1:1%N_nodes
             end
         end
     end
+
+    time_bruteforce = toc;
+    total_time_bruteforce = total_time_bruteforce + time_bruteforce;
+    opt_path
+    min_delay
+    str_matrix = matrix;
+    tic
+    %[opt_path,min_delay,str_matrix] = backward_research(matrix,1,end_node,connectivity_duration, orbital_period);
+    [path, delay] = best_path(str_matrix, 1, end_node, connectivity_duration, orbital_period);
+    time_dijkstra = toc;
+
+    disp(['Delay of Routing: ' num2str(delay)]);
+    disp('Best Routing Path:');
+    display_path(path);
+
     
-    % Choose the path with the minimum total delay
-    
-    
-    % Display the best path and delay
-    disp(['N' num2str(i) ' to GS: ' ]);
-    [~,sat_NR]=min(W(i,:));
-    disp(['Delay of No Routing: ' num2str(hop_delay(W(i,sat_NR),W(end,sat_NR)))]);
-    disp(['Best path : ' strjoin(bestPath, ' -> ') ]);
-    disp(['Best path delay: ' num2str(bestDelay)   ]);
-    toc
-    disp([' ' ]);
-    
-    
+    total_time_dijkstra = total_time_dijkstra + time_dijkstra;
 end
 
-disp("---------------------------------------------------");
-duration = 10;
-period = 100;
-str_matrix = W;
-tic
-[opt_path,min_delay,str_matrix] = backward_research(W,1,N_nodes+1,duration, period);
-matrix = str_matrix;
-[path, delay] = best_path(matrix,duration, period);
-toc
-
-disp(['Delay of Routing: ' num2str(delay)]);
-disp('Best Routing Path:');
-display_path(path);
-
-FloydWarshall('output.txt');
-
-function FloydWarshall(fileName)
-    % Read input file
-    fileID = fopen(fileName, 'r');
-    
-    if fileID == -1
-        disp('File not found.');
-        return;
-    end
-    
-    % Read number of vertices
-    V = fscanf(fileID, '%d', 1);
-    
-    % Initialize distance and parent matrices
-    dist = inf(V, V);
-    parent = zeros(V, V);
-    
-    % Read number of edges
-    E = fscanf(fileID, '%d', 1);
-    
-    % Read edges from input file and store in matrices
-    for i = 1:E
-        x = fscanf(fileID, '%d', 1);
-        y = fscanf(fileID, '%d', 1);
-        w = fscanf(fileID, '%d', 1);
-        dist(x, y) = w;
-        parent(x, y) = x;
-    end
-    
-    % Path from vertex to itself is set to 0
-    for i = 1:V
-        dist(i, i) = 0;
-    end
-    
-    % Initialize the path matrix
-    for i = 1:V
-        for j = 1:V
-            if dist(i, j) == inf
-                parent(i, j) = 0;
-            else
-                parent(i, j) = i;
-            end
-        end
-    end
-    
-    % Actual Floyd-Warshall algorithm
-    for k = 1:V
-        for i = 1:V
-            for j = 1:V
-                if dist(i, j) > dist(i, k) + dist(k, j)
-                    dist(i, j) = dist(i, k) + dist(k, j);
-                    parent(i, j) = parent(k, j);
-                end
-            end
-        end
-    end
-
-    
-    % Check for negative cycles
-    for i = 1:V
-        if dist(i, i) ~= 0
-            disp(['Negative cycle at: ', num2str(i)]);
-            fclose(fileID);
-            return;
-        end
-    end
-    
-    % Display final paths
-    disp('All Pairs Shortest Paths:');
-    disp(['From: ', num2str(1), ' To: ', num2str(20)]);
-    disp(['Path: ', num2str(1), obtainPath(1, 20, parent,dist), num2str(20)]);
-    disp(['Distance: ', num2str(dist(1, 20))]);
-    disp(' ');
-       
-    
-    fclose(fileID);
-end
-
-function pathStr = obtainPath(i, j, parent, dist)
-    if dist(i, j) == inf
-        pathStr = ' no path to ';
-    else
-        if parent(i, j) == i
-            pathStr = ' ';
-        else
-            pathStr = [obtainPath(i, parent(i, j), parent), ' ', num2str(parent(i, j)), ' ', obtainPath(parent(i, j), j, parent)];
-        end
-    end
-end
+% Calculate the average processing time over the Monte Carlo iterations
+avg_time_bruteforce = total_time_bruteforce / num_iterations;
+avg_time_dijkstra = total_time_dijkstra / num_iterations;
 
 
-function [path, delay] = best_path(matrix,duration, period)
-    [rows, cols] = size(matrix);
+
+function [path, delay] = best_path(matrix,start_node, end_node, duration, period)
     delay = inf;
     path = [];
     first = true;
+    [~, cols] = size(matrix);
     for i=1:cols
         for j=1:cols
-            if matrix(1,i)~=inf && matrix(rows,j)~=inf
-                [tmp_path, tmp_delay] = dijkstra(matrix, [1,i], [rows,j], 'v',duration, period);
-                if (tmp_delay <= delay ) %&& length(tmp_path)<length(path)) || first
+            if matrix(start_node,i)~=inf && matrix(end_node,j)~=inf
+                [tmp_path, tmp_delay] = dijkstra(matrix, [start_node,i], [end_node,j], 'v',duration, period);
+                if first || (tmp_delay <= delay )
                     delay = tmp_delay;
                     path = tmp_path;
                     first = false;
@@ -293,7 +315,7 @@ function [path, delay] = dijkstra(matrix, start, goal, dir,duration, period)
     [rows, cols] = size(matrix);
     delays = inf(rows, cols);
     delays(start(1), start(2)) = matrix(start(1), start(2));
-    priority_queue = [matrix(start(1), start(2)) , start];
+    priority_queue = [matrix(start(1), start(2)), start];
     came_from = cell(rows, cols);
 
     while ~isempty(priority_queue)
@@ -302,14 +324,14 @@ function [path, delay] = dijkstra(matrix, start, goal, dir,duration, period)
             current_delay = priority_queue(idx, 1);
             current = priority_queue(idx, 2:3);
 
-            if current == 20
-                break;
-            end
+            % if current == end_node
+            %     break;
+            % end
 
             neighbors = get_neighbors(matrix, current, rows, cols, dir);
             for k = 1:size(neighbors, 1)
                 neighbor = neighbors(k, :);
-                delay = calculate_delay(current_delay,matrix(neighbor(1), neighbor(2)),duration, period);
+                delay = calculate_delay(current_delay,matrix(neighbor(1), neighbor(2)),duration,period);
                 if delay < delays(neighbor(1), neighbor(2))
                     delays(neighbor(1), neighbor(2)) = delay;
                     tmp_priority_queue = [tmp_priority_queue; delay, neighbor];
@@ -325,7 +347,7 @@ function [path, delay] = dijkstra(matrix, start, goal, dir,duration, period)
             dir = 'v';
         end
     end
-    
+ 
     path = reconstruct_path(came_from, start, goal);
     delay = delays(goal(1), goal(2));
 end
@@ -409,7 +431,7 @@ function [path,min_delay] = dNR(matrix,start_node,end_node,connectivity_duration
         end
     end
     % Display the NR path and delay
-    disp(['N1 to GS: ' ]);
+    disp('N1 to GS: ' );
     disp(['Delay of No Routing: ' num2str(min_delay)]);
     disp(['Best No Routing path : ' strjoin(path, ' -> ') ]);
     disp([' ' ]);
@@ -436,6 +458,7 @@ end
     if NR_validity
         min_delay = NR_delay;
         best_path = NR_path;
+        str_matrix = matrix;
     else
         str_matrix = simplify_matrix(matrix,indexes,dir,connectivity_duration,orbital_period,1);
     end
@@ -454,9 +477,9 @@ function str_matrix = simplify_matrix(matrix,indexes,dir,connectivity_duration,o
         out_matrix = matrix;
         if dir == 'h'
             for x=indexes
-                start = x(1,:);
-                i = x(2,:);
-                val = out_matrix(start,i);
+                start = x(2,:);
+                i = x(1,:);
+                val = out_matrix(i,start);
                 index = [];
                 for j=1:numSat
                     if out_matrix(i,j)~=inf && j~=start && i~=j
@@ -500,16 +523,25 @@ function str_matrix = simplify_matrix(matrix,indexes,dir,connectivity_duration,o
     
 end
 
-% Fonction pour calculer le délai entre les noeuds
+% Function to calculate delay between nodes
 function delay = calculate_delay(x, y, connectivity_duration, orbital_period)
-    hop1 =  x;
-    if y < hop1 -10
-        hop2 = 100 + y- x;  % Only consider the adjusted satellite to GS delay
+    if x==inf || y==inf
+        delay=inf;
     else
-        hop2 =  y - max(0,x); % Consider both delays
+        if x > y
+            if x < y + connectivity_duration
+                delay = max(x,0);
+            else
+                a = floor(x/orbital_period);
+                delay = y + (a+1)*orbital_period;
+            end
+        else
+            delay = max(y,0);
+        end
     end
-    delay = max(0,hop1) + max(0,hop2);
 end
+
+
 
 function total_delay = hop_delay(d_1,d_2)
     % Calculate d_NR

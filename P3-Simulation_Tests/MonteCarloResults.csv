@@ -1,0 +1,2 @@
+Number_of_Nodes,Number_of_Sats,Bruteforce_Delay,FloydWarshall_Delay,Avg_CPU_Time_Bruteforce,Avg_CPU_Time_FloydWarshall
+6,5,3440,570,0.1170175,0.0964997
