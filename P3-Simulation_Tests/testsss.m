@@ -220,7 +220,7 @@ writetable(results, 'MonteCarloResults.csv');
 
 disp('Results written to MonteCarloResults.csv');
 
-% Function for Bruteforce routing (You can reuse your existing code logic)
+% Function for Bruteforce routing
 function [opt_path, min_delay] = bruteforce_routing(matrix, nodes_array, sats_array, end_node, connectivity_duration, orbital_period)
     min_delay = inf;
     opt_path = [];

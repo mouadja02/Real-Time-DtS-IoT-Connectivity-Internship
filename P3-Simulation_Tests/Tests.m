@@ -1,7 +1,7 @@
 clc; close all; clear all;
 
-numberOfNodes = 24;
-numberOfSatellites = 24;
+numberOfNodes = 25;
+numberOfSatellites = 40;
 
 % Configuration of the simulation
 startTime = datetime(2024, 1, 1, 0, 0, 0);
@@ -22,16 +22,16 @@ inclinationArray = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 179, 0, 
 
 sat_array = [];
 for i = 1:numberOfSatellites
-    if i==5 || i==6
-        sat_array = [sat_array; satellite(sc, altitude + Re, 0, inclinationArray(i), raanArray(i), 0, trueAnomalyArray(i),'Name', sprintf("S%d", i+12))];
-    else 
-        if i==17 || i==18
-            sat_array = [sat_array; satellite(sc, altitude + Re, 0, inclinationArray(i), raanArray(i), 0, trueAnomalyArray(i),'Name', sprintf("S%d", i-12))];
-        else 
-            sat_array = [sat_array; satellite(sc, altitude + Re, 0, inclinationArray(i), raanArray(i), 0, trueAnomalyArray(i),'Name', sprintf("S%d", i))];
+    % if i==5 || i==6
+    %     sat_array = [sat_array; satellite(sc, altitude + Re, 0, inclinationArray(i), raanArray(i), 0, trueAnomalyArray(i),'Name', sprintf("S%d", i+12))];
+    % else 
+    %     if i==17 || i==18
+    %         sat_array = [sat_array; satellite(sc, altitude + Re, 0, inclinationArray(i), raanArray(i), 0, trueAnomalyArray(i),'Name', sprintf("S%d", i-12))];
+    %     else 
+    sat_array = [sat_array; satellite(sc, altitude + Re, 0, inclinationArray(i), raanArray(i), 0, trueAnomalyArray(i),'Name', sprintf("S%d", i))];
 
-        end
-    end
+    %     end
+    % end
 end
 %Define fixed coordinates for IoTs in Africa and Asia
 latitudes = [35.6895, 1.2921, -26.2041, 9.0765, -15.3875, -33.9249, 13.7563, 31.2304, 39.9042, 28.6139, 23.8103, 34.0208, ...
@@ -92,7 +92,7 @@ connectivity_duration = 420;
 orbital_period = 1.59*3600;
 
 % Number of Monte Carlo simulations
-num_iterations = 1;
+num_iterations = 100;
 
 filename = 'access_intervals6.csv'; % Access the current filename
 
@@ -100,8 +100,8 @@ filename = 'access_intervals6.csv'; % Access the current filename
 results = table();
 
 % Loop through the number of nodes and satellites
-for numNodes = 12%12:6:24
-    for numSats = 18%6:2:24
+for numNodes = 12:6:24
+    for numSats = 6:2:24
         % Charger les données depuis le fichier CSV
         data = readtable('access_intervals6.csv');
         
@@ -140,91 +140,11 @@ for numNodes = 12%12:6:24
             end
         end
 
-        % str_matrix = matrix;
-        % [gg,hh,str_matrix] = backward_simplification(matrix,1,end_node,connectivity_duration, orbital_period);
-        % matrix = str_matrix;
-
 
         % Initialize accumulators for Monte Carlo
         total_time_bruteforce = 0;
         total_time_floydwarshall = 0;
-
-        % Load the CSV file
-        % data = readtable(filename);
-        % 
-        % done = false(numNodes, numSats);
-        % 
-        % % Convertir les colonnes Source et Target en entiers si elles sont des tableaux de cellules
-        % if iscell(data.Source)
-        %     data.Source = cellfun(@(x) convert_to_int(x, numNodes), data.Source);
-        % else
-        %     data.Source = arrayfun(@(x) convert_to_int(num2str(x), numNodes), data.Source);
-        % end
-        % 
-        % if iscell(data.Target)
-        %     data.Target = cellfun(@(x) convert_to_int(x, numNodes), data.Target);
-        % else
-        %     data.Target = arrayfun(@(x) convert_to_int(num2str(x), numNodes), data.Target);
-        % end
-        % 
-        % count= 0;
-        % % Créer le format de liste d'adjacence
-        % adjacencyList = [];
-        % for i = 1:height(data)
-        %     node = data.Target(i);
-        %     satellite = data.Source(i);
-        % 
-        %     if node > numNodes || satellite > numSats+numNodes
-        %         continue;
-        %     end
-        % 
-        %     startTime = data.StartTime(i);
-        % 
-        %     delay = sprintf('%s', datestr(startTime, 'HH:MM:SS'));
-        % 
-        %     % Mettre à jour la matrice avec le premier temps de début de connexion
-        %     if done(node, satellite - numNodes) == false
-        %         S = str2double(delay(1:2)) * 3600 + str2double(delay(4:5)) * 60 + str2double(delay(7:8));
-        %         done(node, satellite - numNodes) = true;
-        %     end
-        % 
-        %     adjacencyList = [adjacencyList; node, satellite, S];
-        %     count = count+1;
-        % end
-        % clear fid_adjacency;
-        % % Créer le fichier de sortie
-        % outputFilename = 'input.txt';
-        % fid_adjacency = fopen(outputFilename, 'w');
-        % 
-        % % Écrire le nombre de sommets et d'arêtes
-        % fprintf(fid_adjacency, '%d\n', numNodes + numSats);
-        % fprintf(fid_adjacency, '%d\n', 2 * count);
-        % 
-        % % Écrire la liste d'adjacence
-        % for i = 1:size(adjacencyList, 1)
-        %     fprintf(fid_adjacency, '%d %d %d\n', adjacencyList(i, 1), adjacencyList(i, 2), adjacencyList(i, 3));
-        % end
-        % 
-        % for i = 1:size(adjacencyList, 1)
-        %     fprintf(fid_adjacency, '%d %d %d\n', adjacencyList(i, 2), adjacencyList(i, 1), adjacencyList(i, 3));
-        % end
-        % 
-        % % Fermer le fichier
-        % fclose(fid_adjacency);
-        % 
-        % data = readtable(filename);
-
-        % Monte Carlo loop
-        matrix = [inf inf inf 1150 650
-            570 inf 3440 inf inf
-            1890 1370 2410 1295 6970
-            inf inf inf 795 565
-            1695 1140 inf 1050 inf
-            410 0 3765 0 inf
-            ]
-        numNodes = 6;
-        numSats = 5;
-        end_node = 2;
+        accuracy = 0;
         for mc_iter = 1:num_iterations
             % Bruteforce Timing
             tic;
@@ -495,14 +415,16 @@ for numNodes = 12%12:6:24
 
             time_bruteforce = toc;
             total_time_bruteforce = total_time_bruteforce + time_bruteforce;
-            opt_path
-            min_delay
             % Floyd-Warshall Timing
             tic;
             %delay_fw = FloydWarshall(outputFilename, 1, end_node, numNodes);
-            [delay_fw, opt_path] = FloydWarshall(matrix, numNodes,numSats, 1, end_node, connectivity_duration, orbital_period)
+            [delay_fw, opt_path] = FloydWarshall(matrix, numNodes,numSats, 1, end_node, connectivity_duration, orbital_period);
             time_floydwarshall = toc;
             total_time_floydwarshall = total_time_floydwarshall + time_floydwarshall;
+
+            if delay_fw==min_delay
+                accuracy = accuracy + 1;
+            end
         end
         
         % Calculate the average processing time over the Monte Carlo iterations
@@ -511,9 +433,9 @@ for numNodes = 12%12:6:24
         
         % Store the results in the table
 
-        newRow = table(numNodes, numSats, min_delay, delay_fw, avg_time_bruteforce, avg_time_floydwarshall, ...
+        newRow = table(numNodes, numSats, min_delay, delay_fw, avg_time_bruteforce, avg_time_floydwarshall,accuracy, ...
                        'VariableNames', {'Number_of_Nodes', 'Number_of_Sats', 'Bruteforce_Delay', 'FloydWarshall_Delay', ...
-                                         'Avg_CPU_Time_Bruteforce', 'Avg_CPU_Time_FloydWarshall'});
+                                         'Avg_CPU_Time_Bruteforce', 'Avg_CPU_Time_FloydWarshall','Accuracy'});
         results = [results; newRow];
         clear delay_fw;
     end
@@ -654,7 +576,7 @@ for numNodes = 10:6:22
         % Store results
         newRow = table(cols1, cols2, avg_delay_bruteforce, avg_delay_fw, accuracy,...
                        'VariableNames', {'Number_of_Nodes', 'Number_of_Sats', 'Bruteforce_Delay', 'FW_Delay', ...
-                                         'FW_Accuracy'})
+                                         'FW_Accuracy'});
         results = [results; newRow];
     end
 end
@@ -775,89 +697,89 @@ function [opt_path, min_delay] = bruteforce_routing(matrix, nodes_array, sats_ar
                                         continue;
                                     end
 
-                                    for q = sats_array
-                                        if matrix(p,q)~=inf && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o
-                                            delay9 = calculate_delay(delay8, matrix(p,q), connectivity_duration, orbital_period);
-                                            if delay9 > min_delay
-                                                continue;
-                                            end
-                                        else
-                                            continue;
-                                        end
-
-
-
-                                        for r = nodes_array
-                                            if matrix(r,q)~=inf && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p
-                                                total_delay = calculate_delay(delay9, matrix(r,q), connectivity_duration, orbital_period);
-                                                delay10 = total_delay;
-                                                if delay10 > min_delay
-                                                    continue;
-                                                end
-                                                if r == end_node && total_delay < min_delay
-                                                    opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r)];
-                                                    min_delay  = total_delay;
-                                                end
-                                            else
-                                                continue;
-                                            end
-
-
-                                            for s = sats_array
-                                                if matrix(r,s)~=inf && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s
-                                                    delay11 = calculate_delay(delay10, matrix(r,s), connectivity_duration, orbital_period);
-                                                    if delay11 > min_delay
-                                                        continue;
-                                                    end
-                                                else
-                                                    continue;
-                                                end
-
-                                                for t = nodes_array
-                                                    if matrix(t,s)~=inf && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p && t~=p && j~=t && l~=t && t~=n && r~=t
-                                                        total_delay = calculate_delay(delay11, matrix(t,s), connectivity_duration, orbital_period);
-                                                        delay12 = total_delay;
-                                                        if delay12 > min_delay
-                                                            continue;
-                                                        end
-                                                        if t == end_node && total_delay < min_delay
-                                                            opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r), "S" + num2str(s), "N" + num2str(t)];
-                                                            min_delay  = total_delay;
-                                                        end
-                                                    else
-                                                        continue;
-                                                    end
-
-                                                    for u = sats_array
-                                                        if matrix(t,u)~=inf && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s && u~=i && u~=k && u~=m && u~=o && u~=q && u~=s
-                                                            delay13 = calculate_delay(delay12, matrix(t,u)~=inf, connectivity_duration, orbital_period);
-                                                            if delay13 > min_delay
-                                                                continue;
-                                                            end
-                                                        else
-                                                            continue;
-                                                        end
-
-                                                        for v = nodes_array
-                                                            if matrix(v,u)~=inf && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p && t~=p && j~=t && l~=t && t~=n && r~=t && v~=j && v~=l && v~=n && v~=p && v~=r && v~=t 
-                                                                total_delay = calculate_delay(delay13, matrix(v,u), connectivity_duration, orbital_period);
-                                                                delay14 = total_delay;
-                                                                if delay14 > min_delay
-                                                                    continue;
-                                                                end
-                                                                if v == end_node && total_delay < min_delay
-                                                                    opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r), "S" + num2str(s), "N" + num2str(t), "S" + num2str(u), "N" + num2str(v)];
-                                                                    min_delay  = total_delay;
-                                                                end
-                                                            else
-                                                                continue;
-                                                            end
-                                                        end
-                                                    end
-                                                end
-                                            end
-                                        end
-                                    end
+                                    % for q = sats_array
+                                    %     if matrix(p,q)~=inf && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o
+                                    %         delay9 = calculate_delay(delay8, matrix(p,q), connectivity_duration, orbital_period);
+                                    %         if delay9 > min_delay
+                                    %             continue;
+                                    %         end
+                                    %     else
+                                    %         continue;
+                                    %     end
+                                    % 
+                                    % 
+                                    % 
+                                    %     for r = nodes_array
+                                    %         if matrix(r,q)~=inf && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p
+                                    %             total_delay = calculate_delay(delay9, matrix(r,q), connectivity_duration, orbital_period);
+                                    %             delay10 = total_delay;
+                                    %             if delay10 > min_delay
+                                    %                 continue;
+                                    %             end
+                                    %             if r == end_node && total_delay < min_delay
+                                    %                 opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r)];
+                                    %                 min_delay  = total_delay;
+                                    %             end
+                                    %         else
+                                    %             continue;
+                                    %         end
+                                    % 
+                                    % 
+                                    %         for s = sats_array
+                                    %             if matrix(r,s)~=inf && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s
+                                    %                 delay11 = calculate_delay(delay10, matrix(r,s), connectivity_duration, orbital_period);
+                                    %                 if delay11 > min_delay
+                                    %                     continue;
+                                    %                 end
+                                    %             else
+                                    %                 continue;
+                                    %             end
+                                    % 
+                                    %             for t = nodes_array
+                                    %                 if matrix(t,s)~=inf && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p && t~=p && j~=t && l~=t && t~=n && r~=t
+                                    %                     total_delay = calculate_delay(delay11, matrix(t,s), connectivity_duration, orbital_period);
+                                    %                     delay12 = total_delay;
+                                    %                     if delay12 > min_delay
+                                    %                         continue;
+                                    %                     end
+                                    %                     if t == end_node && total_delay < min_delay
+                                    %                         opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r), "S" + num2str(s), "N" + num2str(t)];
+                                    %                         min_delay  = total_delay;
+                                    %                     end
+                                    %                 else
+                                    %                     continue;
+                                    %                 end
+                                    % 
+                                    %                 for u = sats_array
+                                    %                     if matrix(t,u)~=inf && k~=i && m~=i && k~=m && k~=o && o~=i && m~=o && q~=i && m~=q && k~=q && q~=o && s~=o && s~=i && m~=s && k~=s && q~=s && u~=i && u~=k && u~=m && u~=o && u~=q && u~=s
+                                    %                         delay13 = calculate_delay(delay12, matrix(t,u)~=inf, connectivity_duration, orbital_period);
+                                    %                         if delay13 > min_delay
+                                    %                             continue;
+                                    %                         end
+                                    %                     else
+                                    %                         continue;
+                                    %                     end
+                                    % 
+                                    %                     for v = nodes_array
+                                    %                         if matrix(v,u)~=inf && l~=j && l~=n && j~=n && l~=p && p~=n && j~=p && j~=r && l~=r && r~=n && r~=p && t~=p && j~=t && l~=t && t~=n && r~=t && v~=j && v~=l && v~=n && v~=p && v~=r && v~=t 
+                                    %                             total_delay = calculate_delay(delay13, matrix(v,u), connectivity_duration, orbital_period);
+                                    %                             delay14 = total_delay;
+                                    %                             if delay14 > min_delay
+                                    %                                 continue;
+                                    %                             end
+                                    %                             if v == end_node && total_delay < min_delay
+                                    %                                 opt_path = ["N1", "S" + num2str(i), "N" + num2str(j), "S" + num2str(k), "N" + num2str(l), "S" + num2str(m), "N" + num2str(n), "S" + num2str(o), "N" + num2str(p), "S" + num2str(q), "N" + num2str(r), "S" + num2str(s), "N" + num2str(t), "S" + num2str(u), "N" + num2str(v)];
+                                    %                                 min_delay  = total_delay;
+                                    %                             end
+                                    %                         else
+                                    %                             continue;
+                                    %                         end
+                                    %                     end
+                                    %                 end
+                                    %             end
+                                    %         end
+                                    %     end
+                                    % end
                                 end
                             end
                         end

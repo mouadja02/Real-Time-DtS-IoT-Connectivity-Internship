@@ -92,6 +92,7 @@ plot(numSatellites, cpuTimeFloydWarshall, '-x', 'DisplayName', 'Floyd-Warshall')
 ylabel('Floyd-Warshall CPU time (seconds)');
 legend('Brute-force', 'Proposed FW-Routing');
 grid on;
+
 %%
 % Read data from Brute-force and Dijkstra algorithms
 data1 = readtable('routing_simulation_results.csv');
@@ -142,6 +143,41 @@ legend('Location', 'northwest', 'FontSize', 10);
 %     % Similarly, you can interpolate for the other curves
 % end
 %%
+% Read data from Brute-force and Dijkstra algorithms
+data1 = readtable('routing_simulation_results4.csv');
+
+% Filter data for different numbers of nodes
+nodes12_1 = data1(data1.Number_of_Nodes == 12, :);
+nodes18_1 = data1(data1.Number_of_Nodes == 18, :);
+nodes24_1 = data1(data1.Number_of_Nodes == 24, :);
+x = nodes12_1.Number_of_Sats;
+
+
+% Plotting CPU times for Brute-force and Dijkstra
+figure;
+plot(x, nodes24_1.Accuracy, '-p', 'LineWidth', 1.5, 'MarkerSize', 6, 'DisplayName', '22 relay nodes (Brute force)');
+hold on;
+plot(x, nodes18_1.Accuracy, '-^', 'LineWidth', 1.5, 'MarkerSize', 6, 'DisplayName', '16 relay nodes (Brute force)');
+plot(x, nodes12_1.Accuracy, '-o', 'LineWidth', 1.5, 'MarkerSize', 6, 'DisplayName', '10 relay nodes (Brute force)');
+
+% Enhancing the plot
+xlabel('Number of Satellites');
+ylabel('CPU Time (seconds)');
+title('Accuracy vs. Number of Satellites');
+grid on;
+
+% Adding legend
+legend('Location', 'northwest', 'FontSize', 10);
+
+%%
+data1 = readtable('routing_simulation_results.csv');
+
+% Filter data for different numbers of nodes
+nodes12_1 = data1(data1.Number_of_Nodes == 12, :);
+nodes18_1 = data1(data1.Number_of_Nodes == 18, :);
+nodes24_1 = data1(data1.Number_of_Nodes == 24, :);
+x = nodes12_1.Number_of_Sats;
+
 
 
 % Plotting Routing Delays
@@ -150,17 +186,13 @@ plot(x, nodes12_1.Bruteforce_Delay, '-o', 'LineWidth', 1.5, 'MarkerSize', 6, 'Di
 hold on;
 plot(x,  nodes18_1.Bruteforce_Delay, '-^','LineWidth', 1.5, 'MarkerSize', 6, 'DisplayName', '16 relay nodes (Brute force)');
 plot(x, nodes24_1.Bruteforce_Delay, '-p', 'LineWidth', 1.5, 'MarkerSize', 6, 'DisplayName', '22 relay nodes (Brute force)');
-xlabel('Number of Satellites');
-ylabel('Routing Delay (seconds)');
-legend('show');
-title('Brute force Routing Delay vs. Number of Satellites');
 plot(x, nodes12_1.Dijkstra_Delay, '--o', 'LineWidth', 1.5, 'MarkerSize', 6, 'DisplayName', '10 relay nodes (Dijkstra)');
 plot(x, nodes18_1.Dijkstra_Delay, '--^', 'LineWidth', 1.5, 'MarkerSize', 6, 'DisplayName', '16 relay nodes (Dijkstra)');
 plot(x, nodes24_1.Dijkstra_Delay, '--p', 'LineWidth', 1.5, 'MarkerSize', 6, 'DisplayName', '22 relay nodes (Dijkstra)');
 xlabel('Number of Satellites');
 ylabel('Routing Delay (seconds)');
 legend('show');
-title('Floyd-Warshall Routing Delay vs. Number of Satellites');
+title('Modified Dijkstra Algorithm accuracy evaluation');
 grid on;
 
 %%
@@ -254,20 +286,52 @@ title('Floyd-Warshall Routing Delay vs. Number of Satellites');
 grid on;
 
 %%
-data = readtable('accuracy_results2.csv');
+data = readtable('routing_simulation_results4.csv');
 nodes12 = data(data.Number_of_Nodes == 12, :);
 nodes18 = data(data.Number_of_Nodes == 18, :);
 nodes24 = data(data.Number_of_Nodes == 24, :);
 x = nodes18.Number_of_Sats;
 
 figure;
-plot(x, nodes12.FW_Accuracy, '-o', 'DisplayName', '12 Nodes Floyd-Warshall');
+%plot(x, nodes12.FW_Accuracy, '-o', 'DisplayName', '12 Nodes Floyd-Warshall');
+plot(x, nodes18.FW_Accuracy, '-o', 'DisplayName', '16 relay nodes');
 hold on;
-plot(x, nodes18.FW_Accuracy, '-o', 'DisplayName', '18 Nodes Floyd-Warshall');
-plot(x, nodes24.FW_Accuracy, '-o', 'DisplayName', '24 Nodes Floyd-Warshall');
+plot(x, nodes24.FW_Accuracy, '-o', 'DisplayName', '22 relay nodes');
 hold off;
 xlabel('Number of Satellites');
-ylabel('CPU Time (seconds)');
+ylabel('Accuracy (%)');
 legend('show');
-title('CPU Time vs. Number of Satellites');
+title('Floyd-Warshall Algorithm Accuracy Evaluation');
 grid on;
+
+%%
+% Load the CSV file
+file_path = 'R1_R2_R3_BF_results_2.csv';
+data = readtable(file_path);
+
+% Extract unique values for the number of nodes to create separate plots
+unique_nodes = unique(data.Number_of_Nodes);
+
+% Create subplots
+num_subplots = length(unique_nodes);
+figure;
+
+% Loop through each unique number of nodes and plot
+for i = 1:num_subplots
+    node = unique_nodes(i);
+    node_data = data(data.Number_of_Nodes == node, :);
+    
+    subplot(num_subplots, 1, i);
+    plot(node_data.Number_of_Sats, node_data.BF1_CPU_time, '-o', 'DisplayName', 'Bruteforce CPU Time Without Reduction');
+    hold on;
+    plot(node_data.Number_of_Sats, node_data.R_BF_total_time, '-o', 'DisplayName', 'Total CPU Time After Reduction');
+    
+    title([num2str(node), ' Relay Nodes']);
+    xlabel('Number of Satellites');
+    ylabel('CPU Time (s)');
+    legend;
+    grid on;
+end
+
+% Adjust layout
+tightfig;

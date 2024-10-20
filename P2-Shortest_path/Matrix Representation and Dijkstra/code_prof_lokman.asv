@@ -731,7 +731,7 @@ for iter=1:mc_iter
         % R2+R3: Eliminer tout delai non accessibles par N1 et GS au pire des cas
         for i=1:N_nodes+1
             for j=1:N_sats
-                if matrix(i,j)>dGS_max+10 || matrix(i,j) +10<d1_min
+                if matrix(i,j)>dGS_max+10 %|| matrix(i,j) +10<d1_min
                     matrix(i,j)=inf;
                 end
             end

@@ -9,8 +9,6 @@ function [min_delay, opt_path] = FloydWarshall(matrix, numNodes, numSats, start_
             if matrix(i,j) ~= inf
                 delays(i, j+numNodes) = matrix(i, j);
                 delays(j+numNodes, i) = matrix(i, j);
-                durations(j+numNodes, i) = connectivity_duration;
-                durations(i, j+numNodes) = connectivity_duration;
                 nextNode(i, j+numNodes) = j+numNodes; 
                 nextNode(j+numNodes, i) = i;  
             end
@@ -27,26 +25,11 @@ function [min_delay, opt_path] = FloydWarshall(matrix, numNodes, numSats, start_
         for i = 1:V
             for j = 1:V
                 if delays(i, k) ~= inf && delays(k, j) ~= inf 
-                    nextNode(i, j) = nextNode(i, k); 
-                    path = 
-                    [delay_via_k,duration_via_k] = calculate_delay_v2(delays(i, k), durations(i, k), delays(k,j), durations(k, j), orbital_period);
+                    delay_via_k = calculate_delay(delays(i, k), delays(k,j), connectivity_duration,orbital_period);
                     
-                    % % Debugging section for specific nodes
-                    % if i == 5+numNodes && j==2 %&& k==1+numNodes
-                    %     % Display paths
-                    %     path_i_to_k = obtainPath(nextNode, i, k, numNodes);
-                    %     path_k_to_j = obtainPath(nextNode, k, j, numNodes); 
-                    %     disp(['Path from i to k: ', strjoin(path_i_to_k, ' -> ')]);
-                    %     disp(['Path from k to j: ', strjoin(path_k_to_j, ' -> ')]);
-                    %     disp(['Total delay via k: ', num2str(delay_via_k)]);
-                    %     disp(['duration: ', num2str(duration_via_k)]);
-                    %     disp(['Current delay: ', num2str(sending_delays(i,j))]);
-                    %     disp("------------------------------------");
-                    % end
 
                     if delays(i, j) > delay_via_k
                         delays(i, j) = delay_via_k;
-                        durations(i, j) = duration_via_k;
                         nextNode(i, j) = nextNode(i, k); 
                     end
 
